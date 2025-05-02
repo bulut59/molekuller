@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CH₃ Molekülü 3D Model</title>
+  <style>
+    body { margin: 0; overflow: hidden; background-color: #000; }
+    .label {
+      color: white;
+      font-weight: bold;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .info-box {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      padding: 10px;
+      border-radius: 8px;
+      max-width: 300px;
+      font-size: 14px;
+      line-height: 1.4em;
+      box-shadow: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="info-box">
+    <strong>CH₃ Molekülü Özellikleri</strong><br>
+    • Yaygın adı: Metil Grubu<br>
+    • Moleküler geometrisi: Düzgün Düzlem Üçgen<br>
+    • Bağ açısı: 120°<br>
+    • C-H bağ uzunluğu: ~1.09 Å<br>
+    • Polarite: Nonpolar<br>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/renderers/CSS2DRenderer.js"></script>
+  <script>
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x000000);
+
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.z = 6;
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    const labelRenderer = new THREE.CSS2DRenderer();
+    labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    labelRenderer.domElement.style.position = 'absolute';
+    labelRenderer.domElement.style.top = '0px';
+    labelRenderer.domElement.style.pointerEvents = 'none';
+    document.body.appendChild(labelRenderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    const light = new THREE.PointLight(0xffffff, 1);
+    light.position.set(10, 10, 10);
+    scene.add(light);
+
+    // Atom boyutları ve materyalleri
+    const carbonMaterial = new THREE.MeshPhongMaterial({ color: 0x2ecc71 });
+    const hydrogenMaterial = new THREE.MeshPhongMaterial({ color: 0x66ccff });
+
+    const carbon = new THREE.Mesh(new THREE.SphereGeometry(0.6, 32, 32), carbonMaterial);
+    scene.add(carbon);
+
+    const bondLength = 1.09;
+
+    const hydrogen1 = new THREE.Mesh(new THREE.SphereGeometry(0.4, 32, 32), hydrogenMaterial);
+    hydrogen1.position.set(bondLength, 0, 0);
+    scene.add(hydrogen1);
+
+    const hydrogen2 = new THREE.Mesh(new THREE.SphereGeometry(0.4, 32, 32), hydrogenMaterial);
+    hydrogen2.position.set(-bondLength * Math.cos(Math.PI / 3), bondLength * Math.sin(Math.PI / 3), 0);
+    scene.add(hydrogen2);
+
+    const hydrogen3 = new THREE.Mesh(new THREE.SphereGeometry(0.4, 32, 32), hydrogenMaterial);
+    hydrogen3.position.set(-bondLength * Math.cos(Math.PI / 3), -bondLength * Math.sin(Math.PI / 3), 0);
+    scene.add(hydrogen3);
+
+    // Bağlar
+    const createBond = (start, end) => {
+      const bondGeometry = new THREE.CylinderGeometry(0.1, 0.1, start.distanceTo(end), 16);
+      const bondMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff });
+      const bond = new THREE.Mesh(bondGeometry, bondMaterial);
+
+      const midpoint = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
+      bond.position.copy(midpoint);
+      bond.lookAt(end);
+      bond.rotateX(Math.PI / 2);
+      scene.add(bond);
+    };
+
+    createBond(carbon.position, hydrogen1.position);
+    createBond(carbon.position, hydrogen2.position);
+    createBond(carbon.position, hydrogen3.position);
+
+    // Etiketler
+    function createLabel(text, position) {
+      const div = document.createElement('div');
+      div.className = 'label';
+      div.textContent = text;
+      const label = new THREE.CSS2DObject(div);
+      label.position.copy(position);
+      return label;
+    }
+
+    scene.add(createLabel('C (Karbon)', carbon.position.clone().add(new THREE.Vector3(0, 0.8, 0))));
+    scene.add(createLabel('H (Hidrojen)', hydrogen1.position.clone().add(new THREE.Vector3(0, 0.6, 0))));
+    scene.add(createLabel('H (Hidrojen)', hydrogen2.position.clone().add(new THREE.Vector3(0, 0.6, 0))));
+    scene.add(createLabel('H (Hidrojen)', hydrogen3.position.clone().add(new THREE.Vector3(0, 0.6, 0))));
+    scene.add(createLabel('120°', new THREE.Vector3(1.2, 0, 0.2)));
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+      labelRenderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>

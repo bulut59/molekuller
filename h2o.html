@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>H₂O Molekülü 3D Model</title>
+  <style>
+    body { margin: 0; overflow: hidden; background-color: #000; }
+    .label {
+      color: white;
+      font-weight: bold;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .info-box {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      padding: 10px;
+      border-radius: 8px;
+      max-width: 300px;
+      font-size: 14px;
+      line-height: 1.4em;
+      box-shadow: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="info-box">
+    <strong>H₂O Molekülü Özellikleri</strong><br>
+    • Yaygın adı: Su<br>
+    • Moleküler geometrisi: Bükülmüş (Bent)<br>
+    • Bağ açısı: Yaklaşık 104.5°<br>
+    • O-H bağ uzunluğu: ~0.96 Å<br>
+    • Polarite: Polar molekül<br>
+    • Elektron çiftleri: 2 bağlayıcı, 2 bağ yapmayan<br>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/renderers/CSS2DRenderer.js"></script>
+  <script>
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x000000);
+
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.z = 6;
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    const labelRenderer = new THREE.CSS2DRenderer();
+    labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    labelRenderer.domElement.style.position = 'absolute';
+    labelRenderer.domElement.style.top = '0px';
+    labelRenderer.domElement.style.pointerEvents = 'none';
+    document.body.appendChild(labelRenderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    const light = new THREE.PointLight(0xffffff, 1);
+    light.position.set(10, 10, 10);
+    scene.add(light);
+
+    // Atom boyutları ve materyalleri
+    const oxygenMaterial = new THREE.MeshPhongMaterial({ color: 0xff4d4d });
+    const hydrogenMaterial = new THREE.MeshPhongMaterial({ color: 0x66ccff });
+
+    const oxygen = new THREE.Mesh(new THREE.SphereGeometry(0.6, 32, 32), oxygenMaterial);
+    scene.add(oxygen);
+
+    const angle = 52.25 * Math.PI / 180; // yarım açı (yaklaşık 104.5°)
+    const bondLength = 1.5;
+
+    const hydrogen1 = new THREE.Mesh(new THREE.SphereGeometry(0.4, 32, 32), hydrogenMaterial);
+    hydrogen1.position.set(Math.cos(angle) * bondLength, Math.sin(angle) * bondLength, 0);
+    scene.add(hydrogen1);
+
+    const hydrogen2 = new THREE.Mesh(new THREE.SphereGeometry(0.4, 32, 32), hydrogenMaterial);
+    hydrogen2.position.set(Math.cos(-angle) * bondLength, Math.sin(-angle) * bondLength, 0);
+    scene.add(hydrogen2);
+
+    // Bağlar
+    const createBond = (start, end) => {
+      const bondGeometry = new THREE.CylinderGeometry(0.1, 0.1, start.distanceTo(end), 16);
+      const bondMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff });
+      const bond = new THREE.Mesh(bondGeometry, bondMaterial);
+
+      const midpoint = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
+      bond.position.copy(midpoint);
+      bond.lookAt(end);
+      bond.rotateX(Math.PI / 2);
+      scene.add(bond);
+    };
+
+    createBond(oxygen.position, hydrogen1.position);
+    createBond(oxygen.position, hydrogen2.position);
+
+    // Yay çizimi (Bağ açısı)
+    const arcShape = new THREE.Shape();
+    arcShape.absarc(0, 0, 1.2, -angle, angle, false);
+    const arcPoints = arcShape.getPoints(50);
+    const arcGeometry = new THREE.BufferGeometry().setFromPoints(arcPoints.map(p => new THREE.Vector3(p.x, p.y, 0)));
+    const arcMaterial = new THREE.LineBasicMaterial({ color: 0xffff00 });
+    const arc = new THREE.Line(arcGeometry, arcMaterial);
+    scene.add(arc);
+
+    // Etiketler
+    function createLabel(text, position) {
+      const div = document.createElement('div');
+      div.className = 'label';
+      div.textContent = text;
+      const label = new THREE.CSS2DObject(div);
+      label.position.copy(position);
+      return label;
+    }
+
+    scene.add(createLabel('O (Oksijen)', oxygen.position.clone().add(new THREE.Vector3(0, 0.8, 0))));
+    scene.add(createLabel('H (Hidrojen)', hydrogen1.position.clone().add(new THREE.Vector3(0, 0.6, 0))));
+    scene.add(createLabel('H (Hidrojen)', hydrogen2.position.clone().add(new THREE.Vector3(0, 0.6, 0))));
+    scene.add(createLabel('104.5°', new THREE.Vector3(1.2, 0, 0.2)));
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+      labelRenderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
